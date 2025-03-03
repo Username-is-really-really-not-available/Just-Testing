@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import CryptoJS from 'crypto-js';
+
+const STORAGE_KEY = 'chats_encrypted';
+const ENCRYPTION_KEY = 'your-secure-key';
 
 export default function App() {
   const [query, setQuery] = useState('');
@@ -6,6 +10,7 @@ export default function App() {
   const [showWebView, setShowWebView] = useState(false);
   const [model, setModel] = useState('gpt-4o-mini');
   const [chats, setChats] = useState([]);
+  const [darkMode, setDarkMode] = useState(true);
 
   const models = [
     { name: 'GPT-4o mini', value: 'gpt-4o-mini' },
@@ -16,8 +21,13 @@ export default function App() {
   ];
 
   useEffect(() => {
-    const savedChats = JSON.parse(localStorage.getItem('chats')) || [];
-    setChats(savedChats);
+    const savedChats = localStorage.getItem(STORAGE_KEY);
+    if (savedChats) {
+      const decryptedChats = JSON.parse(
+        CryptoJS.AES.decrypt(savedChats, ENCRYPTION_KEY).toString(CryptoJS.enc.Utf8)
+      );
+      setChats(decryptedChats);
+    }
   }, []);
 
   const handleSearch = () => {
@@ -27,17 +37,17 @@ export default function App() {
       setShowWebView(true);
       const newChats = [...chats, { query, model }];
       setChats(newChats);
-      localStorage.setItem('chats', JSON.stringify(newChats));
+      localStorage.setItem(STORAGE_KEY, CryptoJS.AES.encrypt(JSON.stringify(newChats), ENCRYPTION_KEY).toString());
     }
   };
 
   const clearChats = () => {
     setChats([]);
-    localStorage.removeItem('chats');
+    localStorage.removeItem(STORAGE_KEY);
   };
 
   return (
-    <div style={styles.container}>
+    <div style={{ ...styles.container, backgroundColor: darkMode ? '#121212' : '#FFFFFF', color: darkMode ? 'white' : 'black' }}>
       <div style={styles.sidebar}>
         <h3>Chatverlauf</h3>
         <button onClick={clearChats} style={styles.clearButton}>🔥</button>
@@ -55,6 +65,9 @@ export default function App() {
               <option key={m.value} value={m.value}>{m.name}</option>
             ))}
           </select>
+          <button onClick={() => setDarkMode(!darkMode)} style={styles.toggleButton}>
+            {darkMode ? '🌙 Dark Mode' : '☀️ Light Mode'}
+          </button>
         </div>
         {!showWebView ? (
           <div style={styles.searchContainer}>
@@ -80,8 +93,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'row',
     height: '100vh',
-    backgroundColor: '#121212',
-    color: 'white',
   },
   sidebar: {
     width: '250px',
@@ -121,6 +132,11 @@ const styles = {
   select: {
     height: '30px',
     padding: '5px',
+  },
+  toggleButton: {
+    marginLeft: '10px',
+    padding: '5px 10px',
+    cursor: 'pointer',
   },
   searchContainer: {
     flex: 1,
