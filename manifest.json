@@ -1,0 +1,154 @@
+import React, { useState, useEffect } from 'react';
+
+export default function App() {
+  const [query, setQuery] = useState('');
+  const [url, setUrl] = useState('https://duck.ai');
+  const [showWebView, setShowWebView] = useState(false);
+  const [model, setModel] = useState('gpt-4o-mini');
+  const [chats, setChats] = useState([]);
+
+  const models = [
+    { name: 'GPT-4o mini', value: 'gpt-4o-mini' },
+    { name: 'Llama 3.3 70B', value: 'llama-3.3-70b' },
+    { name: 'Claude 3 Haiku', value: 'claude-3-haiku' },
+    { name: 'o3-mini', value: 'o3-mini' },
+    { name: 'Mistral Small 3', value: 'mistral-small-3' }
+  ];
+
+  useEffect(() => {
+    const savedChats = JSON.parse(localStorage.getItem('chats')) || [];
+    setChats(savedChats);
+  }, []);
+
+  const handleSearch = () => {
+    if (query.trim() !== '') {
+      const searchUrl = `https://duck.ai/?model=${model}&q=${encodeURIComponent(query)}`;
+      setUrl(searchUrl);
+      setShowWebView(true);
+      const newChats = [...chats, { query, model }];
+      setChats(newChats);
+      localStorage.setItem('chats', JSON.stringify(newChats));
+    }
+  };
+
+  const clearChats = () => {
+    setChats([]);
+    localStorage.removeItem('chats');
+  };
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.sidebar}>
+        <h3>Chatverlauf</h3>
+        <button onClick={clearChats} style={styles.clearButton}>🔥</button>
+        <ul style={styles.chatList}>
+          {chats.map((chat, index) => (
+            <li key={index}>{chat.model}: {chat.query}</li>
+          ))}
+        </ul>
+      </div>
+      <div style={styles.mainContainer}>
+        <div style={styles.modelSelectContainer}>
+          <label style={styles.modelLabel}>Modell:</label>
+          <select style={styles.select} value={model} onChange={(e) => setModel(e.target.value)}>
+            {models.map((m) => (
+              <option key={m.value} value={m.value}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+        {!showWebView ? (
+          <div style={styles.searchContainer}>
+            <h2 style={styles.title}>Anonyme KI-Suche</h2>
+            <input
+              style={styles.input}
+              placeholder='Gib deine Frage ein...'
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <button onClick={handleSearch} style={styles.button}>Suchen</button>
+          </div>
+        ) : (
+          <iframe src={url} style={styles.webView} title='AI Search' />
+        )}
+      </div>
+    </div>
+  );
+}
+
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'row',
+    height: '100vh',
+    backgroundColor: '#121212',
+    color: 'white',
+  },
+  sidebar: {
+    width: '250px',
+    padding: '10px',
+    backgroundColor: '#1a1a1a',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  chatList: {
+    listStyleType: 'none',
+    padding: 0,
+    overflowY: 'auto',
+    maxHeight: '80vh',
+  },
+  clearButton: {
+    alignSelf: 'center',
+    fontSize: '20px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    marginBottom: '10px',
+  },
+  mainContainer: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  modelSelectContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '10px',
+    backgroundColor: '#1a1a1a',
+  },
+  modelLabel: {
+    marginRight: '10px',
+  },
+  select: {
+    height: '30px',
+    padding: '5px',
+  },
+  searchContainer: {
+    flex: 1,
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: '22px',
+    marginBottom: '10px',
+  },
+  input: {
+    height: '30px',
+    width: '80%',
+    padding: '5px',
+    marginBottom: '10px',
+  },
+  button: {
+    padding: '10px 15px',
+    backgroundColor: '#007BFF',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
+  },
+  webView: {
+    flex: 1,
+    border: 'none',
+  },
+};
